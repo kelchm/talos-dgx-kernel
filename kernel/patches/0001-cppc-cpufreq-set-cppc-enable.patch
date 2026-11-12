@@ -1,0 +1,38 @@
+From: Matthew Kelch <kelchm@gmail.com>
+Subject: [PATCH] cpufreq: CPPC: set the CPPC Enable register at policy init
+
+The DGX Spark (GB10, BIOS 5.36) firmware ignores performance requests
+until OSPM sets the ACPI CPPC Enable register. cppc_cpufreq never sets
+it, so on a mainline-based kernel every core stays at its lowest
+performance level. Call cppc_set_enable() when the policy is
+initialized, and tolerate platforms without the register (-EOPNOTSUPP).
+
+This mirrors what NVIDIA's linux-nvidia kernel does. An equivalent
+change is posted for mainline (Sumit Gupta's CPPC Enable series, v2,
+2026-11-10) but not merged. Drop this patch once that series lands in
+the pinned Linux version.
+
+Measured on two DGX Sparks (BIOS 5.36): 20-thread STREAM copy 78 ->
+129 GB/s, single-thread 37 -> 55 GB/s, inference engine start 179 s ->
+93 s.
+
+Applies with --fuzz=0 to the file as shipped in Linux 6.18.58.
+---
+--- a/drivers/cpufreq/cppc_cpufreq.c
++++ b/drivers/cpufreq/cppc_cpufreq.c
+@@ -598,6 +598,15 @@
+ 	policy->driver_data = cpu_data;
+ 
+ 	/*
++	 * Enable CPPC for both OS-driven and autonomous modes, as NVIDIA's
++	 * linux-nvidia kernel does. GB10 firmware ignores performance requests
++	 * until OSPM sets CPPC Enable; the register is optional elsewhere.
++	 */
++	ret = cppc_set_enable(cpu, true);
++	if (ret && ret != -EOPNOTSUPP)
++		pr_warn("Failed to enable CPPC for CPU%d (%d)\n", cpu, ret);
++
++	/*
+ 	 * Set min to lowest nonlinear perf to avoid any efficiency penalty (see
+ 	 * Section 8.4.7.1.1.5 of ACPI 6.1 spec)
+ 	 */
