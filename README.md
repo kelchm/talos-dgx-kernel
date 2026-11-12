@@ -1,9 +1,10 @@
 # Talos DGX kernel
 
 Talos **v1.14.5** for NVIDIA DGX Spark (arm64), release **v1.14.5-dgx1022.11**.
-Linux is Talos v1.14.5's own kernel, unmodified: kernel.org **6.18.58** with the
-siderolabs/pkgs `release-1.14` patches at `f4bda77` (PKGS `v1.14.0-48-gf4bda77`).
-`kernel/patches/` is empty. Only the kernel config differs from stock Talos (see
+Linux is Talos v1.14.5's own kernel: kernel.org **6.18.58** with the
+siderolabs/pkgs `release-1.14` patches at `f4bda77` (PKGS `v1.14.0-48-gf4bda77`),
+plus one CPPC patch in `kernel/patches/` (see [This fork](#this-fork)). Apart from
+that patch, only the kernel config differs from stock Talos (see
 [Kernel config policy](#kernel-config-policy)). NVIDIA stays **580.178.04** and
 GPUDirect Storage stays **2.29.4**. The toolchain, security config, BTF, and
 signing checks remain enabled.
@@ -14,6 +15,19 @@ fixes; Talos's 6.18 LTS kernel does. The rest of the Ubuntu diff, the 22 Ubuntu-
 kernel patches (both `.9` CVE fixes are already in 6.18.58), the out-of-tree `r8127`
 driver (6.18.58's `r8169` drives the RTL8127A), and `talos/source.patch` are gone.
 The `dgx1022` series name is kept for continuity; it no longer refers to the Ubuntu ABI.
+
+## This fork
+
+This is a downstream variant of `kindlingai/talos-dgx-kernel`: upstream plus one kernel patch,
+`kernel/patches/0001-cppc-cpufreq-set-cppc-enable.patch`. Upstream carries no kernel patches.
+
+On DGX Spark firmware (BIOS 5.36), `cppc_cpufreq` never sets the ACPI CPPC Enable register,
+which the firmware requires before it honours frequency requests, so the cores stay at their
+lowest performance level. The patch calls `cppc_set_enable()` when the cpufreq policy is
+initialized. NVIDIA's own kernel carries the equivalent change, and it is posted for mainline
+(Sumit Gupta's CPPC Enable series, v2 on 2026-11-10) but not yet merged; drop the patch when
+it is. Measured on two DGX Sparks (BIOS 5.36) with one inference engine: 20-thread STREAM
+copy 78 to 129 GB/s, single-thread 37 to 55 GB/s, and engine start 179 s to 93 s.
 
 ## Installer choices
 
