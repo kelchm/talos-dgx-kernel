@@ -29,6 +29,11 @@ initialized. NVIDIA's own kernel carries the equivalent change, and it is posted
 it is. Measured on two DGX Sparks (BIOS 5.36) with one inference engine: 20-thread STREAM
 copy 78 to 129 GB/s, single-thread 37 to 55 GB/s, and engine start 179 s to 93 s.
 
+The installer kernel arguments also add `init_on_alloc=0` after `-init_on_alloc`. Both kernel
+configs enable `CONFIG_INIT_ON_ALLOC_DEFAULT_ON`, so removing Talos's `init_on_alloc=1`
+argument alone leaves zeroing on allocation on; the explicit `=0` turns it off. The measured
+image had it.
+
 ## Installer choices
 
 | Variant | CPU pages | Kernel release | NVIDIA source |

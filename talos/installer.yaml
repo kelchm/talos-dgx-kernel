@@ -7,6 +7,7 @@ secureboot: false
 customization:
   extraKernelArgs:
     - -init_on_alloc
+    - init_on_alloc=0
     - -nvme_core.io_timeout
     - arm64.nobti
     - pci=pcie_bus_safe
